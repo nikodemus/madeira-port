@@ -24,3 +24,14 @@
   "Provides :MADEIRA-PORT file class for ASDF, and an extended #+ and #- syntax."
   :components
   ((:file "madeira-port")))
+
+(defsystem :madeira-port-tests
+  :licence "MIT"
+  :description "Tests for MADEIRA-PORT."
+  :depends-on (:madeira-port :eos)
+  :components
+  ((:file "tests")))
+
+(defmethod perform ((op test-op) (sys (eql (find-system :madeira-port))))
+  (load-system :madeira-port-tests :force '(:madeira-port-tests))
+  (funcall (intern "RUN-TESTS" :madeira-port-tests)))

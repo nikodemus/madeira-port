@@ -167,6 +167,9 @@ designators.
 (defeature :find-package (name)
   (find-package name))
 
+(defeature quote (expr)
+  expr)
+
 (defun get-symbol (symbol-name package-name &optional allow-internal)
   (let ((pkg (find-package package-name)))
     (when pkg
@@ -225,7 +228,8 @@ Takes effect at both load and compile-time if processed as a top level form."
               (#\+ value)
               (#\- (not value)))
       (let ((*read-suppress* t))
-        (read stream t nil t)))))
+        (read stream t nil t)))
+    (values)))
 
 (defun %extend-feature-syntax ()
   (let ((rt (copy-readtable nil)))
