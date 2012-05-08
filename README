@@ -23,8 +23,10 @@ definition:
 
     (defsystem :foo
       :serial t
+      :defsystem-depends-on (:madeira-port)
       :components
-      ((:module "ports"
+      ((:file "package")
+       (:module "ports"
         :components
         ((:madeira-port "sbcl" :when :sbcl)
          (:madeira-port "ccl" :when :ccl)
