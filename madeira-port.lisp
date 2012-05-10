@@ -20,7 +20,8 @@
   (:use :cl :asdf)
   (:export #:madeira-port
            #:feature-eval
-           #:extend-feature-syntax))
+           #:extend-feature-syntax
+           #:feature-error))
 
 (in-package :madeira-port)
 
@@ -28,6 +29,19 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *feature-evaluators* (make-hash-table)))
+
+(define-condition feature-error (reader-error simple-warning)
+  ()
+  (:report (lambda (c s)
+             (apply #'format s
+                    (simple-condition-format-control c)
+                    (simple-condition-format-arguments c)))))
+
+(defun %feature-error (format-control &rest format-arguments)
+  (error 'feature-error
+         :stream nil
+         :format-control format-control
+         :format-arguments format-arguments))
 
 (defun feature-eval (expr)
   "Returns the result of evaluating the feature expression EXPR using
@@ -124,7 +138,7 @@ designators.
      (let ((fname (gethash (car expr) *feature-evaluators*)))
        (if fname
            (apply fname (cdr expr))
-           (error "Invalid expression in ~S: ~S" 'featurep expr))))
+           (%feature-error "Invalid expression in ~S: ~S" 'featurep expr))))
     (symbol
      (not (null (member expr *features* :test #'eq))))
     (otherwise
