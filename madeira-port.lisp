@@ -208,6 +208,51 @@ designators.
     (when ok
       (find-class sym))))
 
+(defeature :version>= (version-string)
+  (let ((host-version
+          (or (implementation-version)
+              (%feature-error "Operator ~A is unsupported on ~A"
+                              :version>=
+                              (lisp-implementation-type))))
+        (desired-version
+          (split-version-string version-string)))
+    (assert (every (lambda (n) (>= n 0)) desired-version))
+    (version>= desired-version host-version)))
+
+(defun split-version-string (version-string)
+  (mapcar #'parse-integer
+          (asdf:split-string version-string
+                             :separator '(#\.))))
+
+(defun implementation-version (&optional (host-version (lisp-implementation-version)))
+  (check-type host-version string)
+  #+sbcl
+  (split-version-string host-version)
+  #+ccl
+  ;; Release: "Version 1.8-r15286M  (LinuxX8664)"
+  ;; Trunk:   "Version 1.9-dev-r15329M-trunk  (LinuxX8664)"
+  (let* ((v (asdf:split-string
+             (second (asdf:split-string host-version
+                                        :separator '(#\Space)))
+             :separator '(#\-)))
+         (commit-id
+           (if (string= "dev" (second v))
+               (third v)
+               (second v))))
+    (append (split-version-string (first v))
+            (list (parse-integer (subseq commit-id 1) :junk-allowed t)))))
+
+(defun version>= (x y)
+  (labels ((bigger (x y)
+             (cond ((not y) t)
+                   ((not x) nil)
+                   ((> (car x) (car y)) t)
+                   ((= (car x) (car y))
+                    (bigger (cdr x) (cdr y))))))
+    (and x y
+         (= (car x) (car y))
+         (or (not (cdr y)) (bigger (cdr x) (cdr y))))))
+
 ;;;; Readtable support for FEATURE-EVAL.
 
 (defmacro extend-feature-syntax ()
