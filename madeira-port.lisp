@@ -227,7 +227,8 @@ designators.
 (defun implementation-version (&optional (host-version (lisp-implementation-version)))
   (check-type host-version string)
   #+sbcl
-  (split-version-string host-version)
+  (split-version-string
+   (first (asdf:split-string host-version :separator '(#\-))))
   #+ccl
   ;; Release: "Version 1.8-r15286M  (LinuxX8664)"
   ;; Trunk:   "Version 1.9-dev-r15329M-trunk  (LinuxX8664)"
