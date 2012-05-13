@@ -241,13 +241,13 @@ designators.
   (split-version-string
    (first (asdf:split-string host-version :separator '(#\-))))
   #+ccl
-  (list* ccl::*openmcl-major-version*
-         ccl::*openmcl-minor-version*
-         (if ccl::*openmcl-svn-revision*
-             ;; example: 15329M-trunk
-             (parse-integer ccl::*openmcl-svn-revision*
-                            :junk-allowed t)
-             '())))
+  (list ccl::*openmcl-major-version*
+        ccl::*openmcl-minor-version*
+        (if ccl::*openmcl-svn-revision*
+            ;; example: 15329M-trunk
+            (parse-integer ccl::*openmcl-svn-revision*
+                           :junk-allowed t)
+            0)))
 
 (defun split-version-string (version-string)
   (let ((version-components
