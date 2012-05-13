@@ -116,6 +116,23 @@ Conses evaluate depending on the operator in the CAR:
     ALLOW-INTERNAL is true) symbol in it that has an associated class
     definition. Otherwise evaluates to NIL.
 
+  :SBCL-VERSION>= desired-version
+
+    Evaluates to T if the host lisp is SBCL and DESIRED-VERSION is
+    greater than the host version, otherwise evaluates to
+    NIL. DESIRED-VERSION must be a string composed of non-negative
+    integers separated by #\. ; while the host version is computed by
+    removing the commit id(if present) from the return value of
+    LISP-IMPLEMENTATION-VERSION.
+
+  :CCL-VERSION>= desired-version
+
+    Evaluates to T if the host lisp is CLozure CL and DESIRED-VERSION
+    is greater than the host version, otherwise evaluates to
+    NIL. DESIRED-VERSION must be a string composed of non-negative
+    integers separated by #\. ; while the host version is composed of
+    the major version, minor version and SVN revision id(if present).
+
 In all of these both SYMBOL-NAME and PACKAGE-NAME can be any string
 designators.
 "
@@ -207,6 +224,49 @@ designators.
   (multiple-value-bind (sym ok) (get-symbol symbol-name package-name allow-internal)
     (when ok
       (find-class sym))))
+
+(defeature :sbcl-version>= (version-string)
+  (host-version>= version-string (host-version)))
+
+(defeature :ccl-version>= (version-string)
+  (host-version>= version-string (host-version)))
+
+(defun host-version>= (version-string host-version)
+  (let ((desired-version (split-version-string version-string)))
+    (and host-version (version>= desired-version host-version))))
+
+(defun host-version (&optional (host-version (lisp-implementation-version)))
+  (check-type host-version string)
+  #+sbcl
+  (split-version-string
+   (first (asdf:split-string host-version :separator '(#\-))))
+  #+ccl
+  (list ccl::*openmcl-major-version*
+        ccl::*openmcl-minor-version*
+        (if ccl::*openmcl-svn-revision*
+            ;; example: 15329M-trunk
+            (parse-integer ccl::*openmcl-svn-revision*
+                           :junk-allowed t)
+            0)))
+
+(defun split-version-string (version-string)
+  (let ((version-components
+          (mapcar #'parse-integer
+                  (asdf:split-string version-string
+                                     :separator '(#\.)))))
+    (assert (every (lambda (n) (>= n 0)) version-components))
+    version-components))
+
+(defun version>= (x y)
+  (labels ((bigger (x y)
+             (cond ((not y) t)
+                   ((not x) nil)
+                   ((> (car x) (car y)) t)
+                   ((= (car x) (car y))
+                    (bigger (cdr x) (cdr y))))))
+    (and x y
+         (= (car x) (car y))
+         (or (not (cdr y)) (bigger (cdr x) (cdr y))))))
 
 ;;;; Readtable support for FEATURE-EVAL.
 
