@@ -247,25 +247,36 @@ Takes effect at both load and compile-time if processed as a top level form."
 loaded and compiled if and only if the associated :WHEN and/or :UNLESS
 options evaluate to true under FEATURE-EVAL."))
 
+(defmethod print-object ((port madeira-port) stream)
+  (let ((name (find-symbol (string 'name) :asdf)))
+    (if (and name (slot-exists-p port name)
+             (not (slot-boundp port name)))
+        ;; Workaround for potential printing errors.
+        (print-unreadable-object (port stream :type t :identity t)
+          (princ "(no name)" stream))
+        (call-next-method))))
+
 (defmethod shared-initialize :after ((port madeira-port) slots &key when unless)
   (setf (slot-value port 'test)
         (cond ((and when unless)
                `(:and ,when (:not ,unless)))
               (when when)
-              (unless `(:not ,unless))
-              (t
-               (error "~S has no feature conditionals." port)))))
+              (unless `(:not ,unless)))))
+
+(defun test-expr (port)
+  (or (slot-value port 'test)
+      (warn "~S has no feature conditionals." port)))
 
 (defmethod perform :around ((op load-op) (port madeira-port))
-  (when (feature-eval (slot-value port 'test))
+  (when (feature-eval (test-expr port))
     (call-next-method)))
 
 (defmethod perform :around ((op load-source-op) (port madeira-port))
-  (when (feature-eval (slot-value port 'test))
+  (when (feature-eval (test-expr port))
     (call-next-method)))
 
 (defmethod perform :around ((op compile-op) (port madeira-port))
-  (when (feature-eval (slot-value port 'test))
+  (when (feature-eval (test-expr port))
     (call-next-method)))
 
 ;;; Switch package to circumvent package locks on implementations supporting
