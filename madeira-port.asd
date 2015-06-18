@@ -22,6 +22,7 @@
   :licence "MIT"
   :description
   "Provides :MADEIRA-PORT file class for ASDF, and an extended #+ and #- syntax."
+  :author "Nikodemus Siivola <nikodemus@random-state.net>"
   :components
   ((:file "madeira-port")))
 
