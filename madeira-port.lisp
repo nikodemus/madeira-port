@@ -267,17 +267,24 @@ options evaluate to true under FEATURE-EVAL."))
   (or (slot-value port 'test)
       (warn "~S has no feature conditionals." port)))
 
-(defmethod perform :around ((op load-op) (port madeira-port))
+
+(defmethod input-files :around ((op operation) (port madeira-port))
   (when (feature-eval (test-expr port))
     (call-next-method)))
 
-(defmethod perform :around ((op load-source-op) (port madeira-port))
+(defmethod output-files :around ((op operation) (port madeira-port))
   (when (feature-eval (test-expr port))
     (call-next-method)))
 
-(defmethod perform :around ((op compile-op) (port madeira-port))
+(defmethod component-depends-on :around ((op operation) (port madeira-port))
   (when (feature-eval (test-expr port))
     (call-next-method)))
+
+(defmethod perform :around ((op operation) (port madeira-port))
+  (if (feature-eval (test-expr port))
+      (call-next-method)
+      (asdf::mark-operation-done op port)))
+
 
 ;;; Switch package to circumvent package locks on implementations supporting
 ;;; them -- not that ASDF currently locked, but it might be in the future.
